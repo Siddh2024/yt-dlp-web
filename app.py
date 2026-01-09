@@ -86,8 +86,13 @@ def start_download():
         downloader = Downloader()
         
         def target():
+            import gevent
             global is_downloading
             is_downloading = True
+            
+            # DIAGNOSTIC: Confirm thread started
+            status_callback({'status': 'preparing', 'message': 'Starting engine...'})
+            gevent.sleep(0) # Yield execution to ensuring this message is processed
             
             # Inject our history saver into the callback wrapper
             def wrapped_callback(data):
