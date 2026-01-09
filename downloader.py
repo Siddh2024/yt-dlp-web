@@ -84,12 +84,20 @@ class Downloader:
         callback: function(data) to receive updates
         """
         
+        # Create cookies.txt from env var if it exists
+        if os.environ.get('COOKIES_CONTENT'):
+             with open('cookies.txt', 'w') as f:
+                 f.write(os.environ.get('COOKIES_CONTENT'))
+        
         ydl_opts = {
             'outtmpl': os.path.join(self.download_folder, '%(title)s.%(ext)s'),
             'progress_hooks': [lambda d: self.progress_hook(d, callback)],
             'quiet': True,
             'no_warnings': True,
         }
+
+        if os.path.exists('cookies.txt'):
+            ydl_opts['cookiefile'] = 'cookies.txt'
 
         if format_type == 'audio_best':
             ydl_opts.update({
