@@ -7,10 +7,11 @@ from downloader import Downloader
 import threading
 import json
 import time
-import queue
+from gevent.queue import Queue, Empty
 
 app = Flask(__name__)
-message_queue = queue.Queue()
+message_queue = Queue()
+# message_queue = queue.Queue() # Removed standard queue
 is_downloading = False
 
 def status_callback(data):
@@ -62,11 +63,10 @@ def start_download():
             return jsonify({'status': 'error', 'message': 'No URL provided'}), 400
 
         # Clear queue
-
         while not message_queue.empty():
             try:
                 message_queue.get_nowait()
-            except queue.Empty:
+            except Empty:
                 break
 
         downloader = Downloader()
@@ -91,7 +91,7 @@ def start_download():
             try:
                 downloader.download_video(url, fmt, wrapped_callback)
             except Exception as e:
-                 status_callback({'status': 'error', 'message': str(e)})
+                status_callback({'status': 'error', 'message': str(e)})
 
             is_downloading = False
 
@@ -114,7 +114,7 @@ def progress():
                 
                 if data.get('status') in ['finished', 'error']:
                     break
-            except queue.Empty:
+            except Empty:
                 # Keep-alive heartbeat
                 yield f"data: {json.dumps({'keep_alive': True})}\\n\\n"
             except GeneratorExit:
