@@ -84,10 +84,20 @@ class Downloader:
         callback: function(data) to receive updates
         """
         
-        # Create cookies.txt from env var if it exists
-        if os.environ.get('COOKIES_CONTENT'):
+        # 1. Check for Render Secret File
+        cookie_file = None
+        if os.path.exists('/etc/secrets/cookies.txt'):
+            cookie_file = '/etc/secrets/cookies.txt'
+        
+        # 2. Check for local file
+        elif os.path.exists('cookies.txt'):
+            cookie_file = 'cookies.txt'
+            
+        # 3. Fallback: Create from Env Var (if small enough to not crash)
+        elif os.environ.get('COOKIES_CONTENT'):
              with open('cookies.txt', 'w') as f:
                  f.write(os.environ.get('COOKIES_CONTENT'))
+             cookie_file = 'cookies.txt'
         
         ydl_opts = {
             'outtmpl': os.path.join(self.download_folder, '%(title)s.%(ext)s'),
@@ -96,8 +106,8 @@ class Downloader:
             'no_warnings': True,
         }
 
-        if os.path.exists('cookies.txt'):
-            ydl_opts['cookiefile'] = 'cookies.txt'
+        if cookie_file:
+            ydl_opts['cookiefile'] = cookie_file
 
         if format_type == 'audio_best':
             ydl_opts.update({
