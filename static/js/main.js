@@ -172,6 +172,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         sizeText.textContent = data.total; // already formatted
                     }
 
+                } else if (data.status === 'preparing') {
+                    statusText.textContent = data.message;
+
                 } else if (data.status === 'processing') {
                     statusText.textContent = data.message;
                     progressBar.style.width = '100%';

@@ -120,7 +120,10 @@ def progress():
             except GeneratorExit:
                 break
     
-    return Response(generate(), mimetype='text/event-stream')
+    response = Response(generate(), mimetype='text/event-stream')
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['X-Accel-Buffering'] = 'no'
+    return response
 
 @app.route('/downloads/<path:filename>')
 def download_file(filename):

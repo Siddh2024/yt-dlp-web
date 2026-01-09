@@ -32,6 +32,10 @@ class Downloader:
         Callback for yt-dlp to report progress.
         Normalizes data and invokes the external callback (e.g., to update simple queue).
         """
+
+
+
+
         if d['status'] == 'downloading':
             try:
                 total = d.get('total_bytes') or d.get('total_bytes_estimate') or 0
@@ -99,11 +103,25 @@ class Downloader:
                  f.write(os.environ.get('COOKIES_CONTENT'))
              cookie_file = 'cookies.txt'
         
+        class QueueLogger:
+            def __init__(self, callback):
+                self.callback = callback
+            def debug(self, msg):
+                pass
+            def info(self, msg):
+                if self.callback:
+                    # Capture useful status messages that are NOT download progress
+                    if not msg.startswith('[download]'):
+                         self.callback({'status': 'preparing', 'message': msg})
+            def warning(self, msg): pass
+            def error(self, msg): pass
+
         ydl_opts = {
             'outtmpl': os.path.join(self.download_folder, '%(title)s.%(ext)s'),
             'progress_hooks': [lambda d: self.progress_hook(d, callback)],
             'quiet': True,
             'no_warnings': True,
+            'logger': QueueLogger(callback),
         }
 
         if cookie_file:
