@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / Packaging
+dist/
+build/
+*.spec
+*.zip
+
+# Virtual Environment
+venv/
+env/
+
+# App Specific
+downloads/
+YtDlp_Executable/
+history.json

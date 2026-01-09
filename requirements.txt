@@ -1,6 +1,4 @@
-customtkinter
+flask
 yt-dlp
-pyinstaller
-Flask
 gunicorn
 gevent

@@ -54,39 +54,47 @@ def start_download():
     url = data.get('url')
     fmt = data.get('format')
 
-    if not url:
-        return jsonify({'status': 'error', 'message': 'No URL provided'}), 400
+    try:
+        if not url:
+            return jsonify({'status': 'error', 'message': 'No URL provided'}), 400
 
-    # Clear queue
-    with message_queue.mutex:
-        message_queue.queue.clear()
+        # Clear queue
+        with message_queue.mutex:
+            message_queue.queue.clear()
 
-    downloader = Downloader()
-    
-    def target():
-        global is_downloading
-        is_downloading = True
+        downloader = Downloader()
         
-        # Inject our history saver into the callback wrapper
-        def wrapped_callback(data):
-            if data.get('status') == 'finished':
-                # Save to history when finished
-                save_history_item({
-                    'title': data.get('filename'), # Fallback title, ideally we get real title
-                    'url': url,
-                    'format': fmt,
-                    'date': time.strftime("%Y-%m-%d %H:%M"),
-                    'filename': data.get('filename')
-                })
-            status_callback(data)
+        def target():
+            global is_downloading
+            is_downloading = True
+            
+            # Inject our history saver into the callback wrapper
+            def wrapped_callback(data):
+                if data.get('status') == 'finished':
+                    # Save to history when finished
+                    save_history_item({
+                        'title': data.get('filename'), # Fallback title, ideally we get real title
+                        'url': url,
+                        'format': fmt,
+                        'date': time.strftime("%Y-%m-%d %H:%M"),
+                        'filename': data.get('filename')
+                    })
+                status_callback(data)
 
-        downloader.download_video(url, fmt, wrapped_callback)
-        is_downloading = False
+            try:
+                downloader.download_video(url, fmt, wrapped_callback)
+            except Exception as e:
+                 status_callback({'status': 'error', 'message': str(e)})
 
-    thread = threading.Thread(target=target, daemon=True)
-    thread.start()
+            is_downloading = False
 
-    return jsonify({'status': 'started'})
+        thread = threading.Thread(target=target, daemon=True)
+        thread.start()
+
+        return jsonify({'status': 'started'})
+    except Exception as e:
+        print(f"Error starting download: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/progress')
 def progress():
