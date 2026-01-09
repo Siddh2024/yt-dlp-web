@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>yt-dlp Web</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Ionicons for Icons -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</head>
+
+<body>
+
+    <div class="main-container">
+        <!-- Card -->
+        <div class="glass-card">
+            <header>
+                <h1>yt-dlp <span class="accent">web</span></h1>
+                <div class="header-controls">
+                    <div class="icon-btn" id="history-toggle" title="History">
+                        <ion-icon name="time-outline"></ion-icon>
+                    </div>
+                    <div class="theme-toggle icon-btn" id="theme-toggle" title="Theme">
+                        <ion-icon name="moon-outline"></ion-icon>
+                    </div>
+                </div>
+            </header>
+
+            <form id="download-form">
+                <!-- URL Input -->
+                <div class="input-group">
+                    <label for="url">Video Link</label>
+                    <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." required>
+                </div>
+
+                <!-- Advanced Format Selection -->
+                <div class="input-group">
+                    <label>Quality / Format</label>
+                    <div class="select-wrapper">
+                        <select id="format-select" name="format">
+                            <optgroup label="Video + Audio">
+                                <option value="best" selected>Best Quality (Auto)</option>
+                                <option value="video_1080">1080p (MP4/MKV)</option>
+                                <option value="video_720">720p (MP4/MKV)</option>
+                                <option value="video_480">480p (MP4/MKV)</option>
+                            </optgroup>
+                            <optgroup label="Audio Only">
+                                <option value="audio_best">Audio Best (MP3 192kbps)</option>
+                                <option value="audio_low">Audio Low (MP3 128kbps)</option>
+                            </optgroup>
+                            <optgroup label="Video Only">
+                                <option value="video_only">Video Stream Only (No Sound)</option>
+                            </optgroup>
+                        </select>
+                        <ion-icon name="chevron-down-outline" class="select-arrow"></ion-icon>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button type="submit" id="download-btn" class="primary-btn">
+                    <span>Download</span>
+                    <ion-icon name="download-outline"></ion-icon>
+                </button>
+            </form>
+
+            <!-- Progress Section (Hidden by default) -->
+            <div id="progress-container" class="progress-section hidden">
+                <div class="status-header">
+                    <span id="status-text">Starting...</span>
+                    <span id="percent-text">0%</span>
+                </div>
+
+                <div class="progress-track">
+                    <div class="progress-fill" id="progress-bar"></div>
+                </div>
+
+                <div class="meta-data">
+                    <div class="meta-item">
+                        <ion-icon name="speedometer-outline"></ion-icon>
+                        <span id="speed-text">--/s</span>
+                    </div>
+                    <div class="meta-item">
+                        <ion-icon name="time-outline"></ion-icon>
+                        <span id="eta-text">--:--</span>
+                    </div>
+                    <div class="meta-item">
+                        <ion-icon name="document-outline"></ion-icon>
+                        <span id="size-text">-- MB</span>
+                    </div>
+                </div>
+
+                <!-- Success Action -->
+                <div id="success-action" class="hidden" style="margin-top: 20px;">
+                    <a id="save-file-btn" href="#" class="primary-btn" style="background-color: #10b981;">
+                        <span>Save to Device</span>
+                        <ion-icon name="save-outline"></ion-icon>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Error Message (Hidden) -->
+            <div id="error-message" class="error-box hidden"></div>
+        </div>
+
+        <footer class="minimal-footer">
+            Powered by yt-dlp
+        </footer>
+    </div>
+
+    <!-- History Drawer -->
+    <div class="history-overlay hidden" id="history-overlay"></div>
+    <aside class="history-drawer" id="history-drawer">
+        <div class="drawer-header">
+            <h2>Download History</h2>
+            <div class="icon-btn" id="history-close">
+                <ion-icon name="close-outline"></ion-icon>
+            </div>
+        </div>
+        <div class="history-list" id="history-list">
+            <!-- Items injected by JS -->
+            <div class="empty-state">No downloads yet</div>
+        </div>
+    </aside>
+
+    <script src="/static/js/main.js"></script>
+</body>
+
+</html>
