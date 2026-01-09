@@ -123,7 +123,9 @@ class Downloader:
             'quiet': False, # Turn off quiet to generate logs
             'no_warnings': True,
             'logger': QueueLogger(callback),
-            'verbose': True # Force verbose logging 
+            'verbose': True, # Force verbose logging
+            'cache_dir': '/tmp/yt-dlp-cache',
+            'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         }
 
         if cookie_file:
