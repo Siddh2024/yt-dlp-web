@@ -62,7 +62,7 @@ def start_download():
             return jsonify({'status': 'error', 'message': 'No URL provided'}), 400
 
         # Clear queue
-        # Clear queue
+
         while not message_queue.empty():
             try:
                 message_queue.get_nowait()
