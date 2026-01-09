@@ -45,8 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchHistory() {
         try {
             const res = await fetch('/history');
-            const data = await res.json();
-            renderHistory(data);
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                const data = await res.json();
+                renderHistory(data);
+            } else {
+                console.error("History endpoint returned non-JSON:", await res.text());
+                // Silently fail or show small badge? For now, just don't crash.
+            }
         } catch (e) {
             console.error("Failed to load history", e);
         }
