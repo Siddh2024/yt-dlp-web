@@ -1,3 +1,6 @@
+from gevent import monkey
+monkey.patch_all()
+
 from flask import Flask, render_template, request, Response, jsonify, send_from_directory
 import os
 from downloader import Downloader
@@ -103,22 +106,17 @@ def progress():
             try:
                 # Wait for data with a timeout to keep connection alive
                 data = message_queue.get(timeout=30) 
-                yield f"data: {json.dumps(data)}\n\n"
+                yield f"data: {json.dumps(data)}\\n\\n"
                 
                 if data.get('status') in ['finished', 'error']:
                     break
             except queue.Empty:
                 # Keep-alive heartbeat
-                yield f"data: {json.dumps({'keep_alive': True})}\n\n"
+                yield f"data: {json.dumps({'keep_alive': True})}\\n\\n"
             except GeneratorExit:
                 break
     
     return Response(generate(), mimetype='text/event-stream')
-
-from flask import Flask, render_template, request, Response, jsonify, send_from_directory
-import os
-
-# ... (imports remain the same, adding send_from_directory)
 
 @app.route('/downloads/<path:filename>')
 def download_file(filename):

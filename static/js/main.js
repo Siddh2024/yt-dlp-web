@@ -127,7 +127,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ url, format })
             });
 
-            const result = await response.json();
+            // Check for JSON response
+            const contentType = response.headers.get("content-type");
+            let result;
+
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                result = await response.json();
+            } else {
+                // Backend crashed or returned HTML
+                const text = await response.text();
+                console.error("Server returned non-JSON:", text);
+                throw new Error(`Server Error (${response.status}): The server crashed or returned an invalid response.`);
+            }
 
             if (response.status !== 200) {
                 throw new Error(result.message || 'Failed to start download');
