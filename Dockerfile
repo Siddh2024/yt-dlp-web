@@ -15,4 +15,4 @@ COPY . .
 EXPOSE 5000
 
 # Run with Gunicorn
-CMD ["gunicorn", "-w", "2", "-k", "gevent", "-b", "0.0.0.0:5000", "app:app"]
+CMD ["sh", "-c", "gunicorn -w 1 -k gevent -b 0.0.0.0:${PORT:-5000} app:app"]
