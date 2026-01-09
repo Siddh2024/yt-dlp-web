@@ -107,7 +107,8 @@ class Downloader:
             def __init__(self, callback):
                 self.callback = callback
             def debug(self, msg):
-                pass
+                if self.callback and msg.startswith('[debug] '):
+                     self.callback({'status': 'preparing', 'message': msg[:50]})
             def info(self, msg):
                 if self.callback:
                     # Capture useful status messages that are NOT download progress
@@ -119,9 +120,10 @@ class Downloader:
         ydl_opts = {
             'outtmpl': os.path.join(self.download_folder, '%(title)s.%(ext)s'),
             'progress_hooks': [lambda d: self.progress_hook(d, callback)],
-            'quiet': True,
+            'quiet': False, # Turn off quiet to generate logs
             'no_warnings': True,
             'logger': QueueLogger(callback),
+            'verbose': True # Force verbose logging 
         }
 
         if cookie_file:
@@ -150,6 +152,9 @@ class Downloader:
             ydl_opts.update({'format': 'bestvideo+bestaudio/best'})
 
         try:
+            if callback:
+                callback({'status': 'preparing', 'message': 'Starting extraction...'})
+            
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
                 # Parse filename to serve back to user
