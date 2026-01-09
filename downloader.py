@@ -125,7 +125,8 @@ class Downloader:
             'logger': QueueLogger(callback),
             'verbose': True, # Force verbose logging
             'cache_dir': '/tmp/yt-dlp-cache',
-            'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+            'extractor_args': {'youtube': {'player_client': ['ios']}},
+            'force_ipv4': True,
         }
 
         if cookie_file:
