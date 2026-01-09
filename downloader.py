@@ -123,11 +123,16 @@ class Downloader:
             'quiet': False, # Turn off quiet to generate logs
             'no_warnings': True,
             'logger': QueueLogger(callback),
-            'verbose': True, # Force verbose logging
+            'verbose': True, 
             'cache_dir': '/tmp/yt-dlp-cache',
-            'extractor_args': {'youtube': {'player_client': ['ios']}},
+            'extractor_args': {'youtube': {'player_client': ['tv']}},
             'force_ipv4': True,
+            'overwrites': True,
+            'updatetime': False, # no_mtime equivalent, prevents FS errors
         }
+
+        # FINAL ATTEMPT CONFIG:
+        # 'tv' client uses a different API that is often less throttled on servers.
 
         if cookie_file:
             ydl_opts['cookiefile'] = cookie_file
