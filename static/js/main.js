@@ -18,6 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('theme', isLight ? 'light' : 'dark');
     });
 
+    // --- Log Helper (No-op for production) ---
+    function log(msg, type = 'info') {
+        // console.log(`[${type}] ${msg}`);
+    }
+
     // --- History Logic ---
     const historyToggle = document.getElementById('history-toggle');
     const historyClose = document.getElementById('history-close');
@@ -150,65 +155,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(result.message || 'Failed to start download');
             }
 
-            // 2. Connect to SSE
-            if (eventSource) eventSource.close();
+            // 2. Start Polling (Wait 1s before first poll)
 
-            eventSource = new EventSource('/progress');
+            // Clear any existing interval
+            if (window.pollInterval) clearInterval(window.pollInterval);
 
-            eventSource.onmessage = (e) => {
-                const data = JSON.parse(e.data);
+            window.pollInterval = setInterval(async () => {
+                try {
+                    const statusRes = await fetch('/status');
+                    if (!statusRes.ok) throw new Error("Status check failed: " + statusRes.status);
+                    const data = await statusRes.json();
 
-                if (data.keep_alive) return;
+                    if (!data || Object.keys(data).length === 0) return;
 
-                if (data.status === 'downloading') {
-                    const pct = data.percentage;
-                    progressBar.style.width = pct + '%';
-                    percentText.textContent = data.percentage_str;
-                    statusText.textContent = 'Downloading...';
-                    speedText.textContent = data.speed;
-                    etaText.textContent = data.eta;
+                    if (data.status === 'downloading') {
+                        const pct = data.percentage;
+                        progressBar.style.width = pct + '%';
+                        percentText.textContent = data.percentage_str;
+                        statusText.textContent = 'Downloading...';
+                        speedText.textContent = data.speed;
+                        etaText.textContent = data.eta;
 
-                    if (data.total) {
-                        sizeText.textContent = data.total; // already formatted
+                        if (data.total) {
+                            sizeText.textContent = data.total;
+                        }
+
+                    } else if (data.status === 'preparing') {
+                        statusText.textContent = data.message;
+
+                    } else if (data.status === 'processing') {
+                        statusText.textContent = data.message;
+                        progressBar.style.width = '100%';
+                        percentText.textContent = '100%';
+                        etaText.textContent = 'Done';
+
+                    } else if (data.status === 'finished') {
+                        statusText.textContent = 'Server Download Complete!';
+                        statusText.style.color = 'var(--accent-color)';
+                        progressBar.style.width = '100%';
+                        btn.disabled = false;
+
+                        // Show Save Button
+                        const successAction = document.getElementById('success-action');
+                        const saveBtn = document.getElementById('save-file-btn');
+                        successAction.classList.remove('hidden');
+                        saveBtn.href = `/downloads/${encodeURIComponent(data.filename)}`;
+
+                        fetchHistory(); // Refresh history list
+                        clearInterval(window.pollInterval);
+
+                    } else if (data.status === 'error') {
+                        throw new Error(data.message);
                     }
-
-                } else if (data.status === 'preparing') {
-                    statusText.textContent = data.message;
-
-                } else if (data.status === 'processing') {
-                    statusText.textContent = data.message;
-                    progressBar.style.width = '100%';
-                    percentText.textContent = '100%';
-                    etaText.textContent = 'Done';
-
-                } else if (data.status === 'finished') {
-                    statusText.textContent = 'Server Download Complete!';
-                    statusText.style.color = 'var(--accent-color)';
-                    progressBar.style.width = '100%';
-                    btn.disabled = false;
-
-                    // Show Save Button
-                    const successAction = document.getElementById('success-action');
-                    const saveBtn = document.getElementById('save-file-btn');
-                    successAction.classList.remove('hidden');
-                    saveBtn.href = `/downloads/${encodeURIComponent(data.filename)}`;
-
-                    // Optional: Auto-trigger download
-                    // window.location.href = saveBtn.href;
-
-                    fetchHistory(); // Refresh history list
-                    eventSource.close();
-
-                } else if (data.status === 'error') {
-                    throw new Error(data.message);
+                } catch (pollErr) {
+                    console.error("Polling error:", pollErr);
+                    // Don't stop polling on transient network error, but maybe log it
                 }
-            };
-
-            eventSource.onerror = () => {
-                // If connection drops but we aren't finished, it might be a network error
-                // For now, we rely on the 'finished' message to close.
-                // console.log("SSE Connection closed or error");
-            };
+            }, 1000); // Poll every 1 second
 
         } catch (err) {
             console.error(err);
@@ -216,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             errorBox.classList.remove('hidden');
             progressContainer.classList.add('hidden');
             btn.disabled = false;
-            if (eventSource) eventSource.close();
+            if (window.pollInterval) clearInterval(window.pollInterval);
         }
     });
 });

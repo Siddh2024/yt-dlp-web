@@ -13,12 +13,17 @@ app = Flask(__name__)
 message_queue = Queue()
 # message_queue = queue.Queue() # Removed standard queue
 is_downloading = False
+current_status = {}
 
 def status_callback(data):
     """
     Push data to the queue for the SSE consumer.
+    Also update global status for polling.
     """
+    global current_status
+    print(f"DEBUG: Enqueueing data: {str(data)[:50]}")
     message_queue.put(data)
+    current_status = data
 
 HISTORY_FILE = 'history.json'
 
@@ -48,6 +53,11 @@ def index():
 def get_history():
     return jsonify(load_history())
 
+@app.route('/status')
+def get_status():
+    global current_status
+    return jsonify(current_status)
+
 @app.route('/download', methods=['POST'])
 def start_download():
     global is_downloading
@@ -57,6 +67,10 @@ def start_download():
     data = request.json
     url = data.get('url')
     fmt = data.get('format')
+    
+    # Initialize status immediately
+    global current_status
+    current_status = {'status': 'preparing', 'message': 'Initializing download...'}
 
     try:
         if not url:
@@ -106,6 +120,8 @@ def start_download():
 @app.route('/progress')
 def progress():
     def generate():
+        print("DEBUG: SSE generator started")
+        yield f"data: {json.dumps({'status': 'connected', 'message': 'Connected to server'})}\\n\\n"
         while True:
             try:
                 # Wait for data with a timeout to keep connection alive
