@@ -16,7 +16,7 @@ class Downloader:
         while size > power:
             size /= power
             n += 1
-        return f"{size:.2f} {power_labels[n]}B"
+        return f"{size:.2f} {power_labels.get(n, '')}B"
 
     def format_seconds(self, seconds):
         if seconds is None:
@@ -159,25 +159,46 @@ class Downloader:
             # Default: Best Video + Best Audio
             ydl_opts.update({'format': 'bestvideo+bestaudio/best'})
 
-        try:
-            if callback:
-                callback({'status': 'preparing', 'message': 'Starting extraction...'})
-            
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        def attempt_download(opts, client_name):
+             if callback:
+                callback({'status': 'preparing', 'message': f'Starting extraction ({client_name})...'})
+             
+             with yt_dlp.YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(url, download=True)
-                # Parse filename to serve back to user
-                if 'requested_downloads' in info:
-                    # Logic for merged formats
-                    final_filename = info['requested_downloads'][0]['filepath']
-                else:
-                    # Logic for single file downloads
-                    final_filename = ydl.prepare_filename(info)
-                    
-                    # Correction for audio conversion (webm -> mp3) happens in post-process, 
-                    # but yt-dlp info might still say webm/m4a initially.
-                    if format_type == 'audio':
-                         base, _ = os.path.splitext(final_filename)
-                         final_filename = f"{base}.mp3"
+                return info
+
+        try:
+            # 1. Try with TV client (set in initial opts)
+            info = attempt_download(ydl_opts, "TV Client")
+        except Exception as e:
+            print(f"TV Client failed: {e}")
+            if callback:
+                callback({'status': 'preparing', 'message': 'TV Client failed, retrying with Android...'})
+            
+            # 2. Fallback: Android Client
+            # Remove previous extractor args and set new ones
+            if 'extractor_args' in ydl_opts:
+                del ydl_opts['extractor_args']
+            ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android']}}
+            
+            # Try again
+            info = attempt_download(ydl_opts, "Android Client")
+
+        # Process the result (info)
+        if info:
+             # Parse filename to serve back to user
+            if 'requested_downloads' in info:
+                # Logic for merged formats
+                final_filename = info['requested_downloads'][0]['filepath']
+            else:
+                # Logic for single file downloads
+                final_filename = ydl.prepare_filename(info)
+                
+                # Correction for audio conversion (webm -> mp3) happens in post-process, 
+                # but yt-dlp info might still say webm/m4a initially.
+                if format_type == 'audio':
+                        base, _ = os.path.splitext(final_filename)
+                        final_filename = f"{base}.mp3"
 
             # Get just the basename to send to frontend
             basename = os.path.basename(final_filename)
@@ -190,8 +211,3 @@ class Downloader:
                 'filename': basename
             })
             
-        except Exception as e:
-            callback({
-                'status': 'error',
-                'message': str(e)
-            })

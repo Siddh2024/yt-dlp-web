@@ -12,8 +12,15 @@ from gevent.queue import Queue, Empty
 app = Flask(__name__)
 message_queue = Queue()
 # message_queue = queue.Queue() # Removed standard queue
+import shutil
+
 is_downloading = False
 current_status = {}
+
+# Startup Check for FFmpeg
+if not shutil.which('ffmpeg'):
+    print("WARNING: FFmpeg not found! Merging formats and audio conversion will fail.")
+    print("Please ensure FFmpeg is installed and in your PATH.")
 
 def status_callback(data):
     """
