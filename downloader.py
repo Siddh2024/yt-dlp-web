@@ -167,37 +167,57 @@ class Downloader:
                 info = ydl.extract_info(url, download=True)
                 return info
 
-        try:
-            # 1. Try with Android Client (Usually most reliable)
-            if 'extractor_args' in ydl_opts:
-                del ydl_opts['extractor_args']
-            ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android']}}
-            info = attempt_download(ydl_opts, "Android Client")
-            
-        except Exception as e_android:
-            print(f"Android Client failed: {e_android}")
-            if callback:
-                callback({'status': 'preparing', 'message': 'Android Client failed, trying iOS...'})
-                
+        po_token = os.environ.get('PO_TOKEN')
+        visitor_data = os.environ.get('VISITOR_DATA')
+        
+        def get_args(client):
+            args = {'player_client': [client]}
+            if po_token and client == 'web':
+                 args['po_token'] = [f"web+{po_token}"]
+            if visitor_data:
+                args['visitor_data'] = [visitor_data]
+            return {'youtube': args}
+
+        info = None
+        
+        # 0. Priority Attempt: Web Client with PO Token
+        if po_token:
             try:
-                # 2. Fallback: iOS Client
-                ydl_opts['extractor_args'] = {'youtube': {'player_client': ['ios']}}
-                info = attempt_download(ydl_opts, "iOS Client")
-                
-            except Exception as e_ios:
-                print(f"iOS Client failed: {e_ios}")
+                print("DEBUG: PO Token detected, prioritizing Web Client.")
+                ydl_opts['extractor_args'] = get_args('web')
+                info = attempt_download(ydl_opts, "Web Client (with PO Token)")
+            except Exception as e:
+                print(f"PO Token Web attempt failed: {e}")
                 if callback:
-                    callback({'status': 'preparing', 'message': 'iOS Client failed, trying Web (might work)...'})
+                    callback({'status': 'preparing', 'message': 'PO Token attempt failed, trying fallbacks...'})
+        
+        # Standard Fallback Loop if no info yet
+        if not info:
+            try:
+                # 1. Android Client
+                ydl_opts['extractor_args'] = get_args('android')
+                info = attempt_download(ydl_opts, "Android Client")
+            except Exception as e_android:
+                print(f"Android Client failed: {e_android}")
+                if callback:
+                    callback({'status': 'preparing', 'message': 'Android Client failed, trying iOS...'})
                 
-                # 3. Fallback: Web Client (Default)
-                if 'extractor_args' in ydl_opts:
-                    del ydl_opts['extractor_args']
-                # No specific client args defaults to web/desktop
-                info = attempt_download(ydl_opts, "Web Client")
+                try:
+                    # 2. iOS Client
+                    ydl_opts['extractor_args'] = get_args('ios')
+                    info = attempt_download(ydl_opts, "iOS Client")
+                except Exception as e_ios:
+                    print(f"iOS Client failed: {e_ios}")
+                    if callback:
+                        callback({'status': 'preparing', 'message': 'iOS Client failed, trying Web...'})
+                    
+                    # 3. Web Client (Last Resort)
+                    ydl_opts['extractor_args'] = get_args('web')
+                    info = attempt_download(ydl_opts, "Web Client")
 
         # Process the result (info)
         if info:
-             # Parse filename to serve back to user
+            # Parse filename to serve back to user
             if 'requested_downloads' in info:
                 # Logic for merged formats
                 final_filename = info['requested_downloads'][0]['filepath']
