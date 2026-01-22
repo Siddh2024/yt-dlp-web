@@ -125,7 +125,7 @@ class Downloader:
             'no_warnings': True,
             'logger': QueueLogger(callback),
             'verbose': True, 
-            'cache_dir': os.path.join(os.getcwd(), '.cache'),
+            'cache_dir': False, # Disable cache completely to prevent locking hangs
             'extractor_args': {'youtube': {'player_client': ['tv']}},
             'force_ipv4': True,
             'overwrites': True,
