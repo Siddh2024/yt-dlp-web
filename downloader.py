@@ -130,25 +130,25 @@ class Downloader:
         }
 
         # 1. Try with Android Client (Usually most reliable)
-            # However, if PO Token is present, we often want to prioritize the Web client
-            # because the PO Token is generated from a Web session.
+        # However, if PO Token is present, we often want to prioritize the Web client
+        # because the PO Token is generated from a Web session.
+        
+        po_token = os.environ.get('PO_TOKEN')
+        visitor_data = os.environ.get('VISITOR_DATA')
+        
+        # Helper to build args
+        def get_args(client):
+            args = {'player_client': [client]}
             
-            po_token = os.environ.get('PO_TOKEN')
-            visitor_data = os.environ.get('VISITOR_DATA')
-            
-            # Helper to build args
-            def get_args(client):
-                args = {'player_client': [client]}
-                
-                # VISITOR_DATA and PO_TOKEN are web-based artifacts.
-                # Injecting them into mobile clients (Android/iOS) can cause hangs/conflicts.
-                if client == 'web':
-                    if po_token:
-                        args['po_token'] = [f"web+{po_token}"]
-                    if visitor_data:
-                        args['visitor_data'] = [visitor_data]
-                        
-                return {'youtube': args}
+            # VISITOR_DATA and PO_TOKEN are web-based artifacts.
+            # Injecting them into mobile clients (Android/iOS) can cause hangs/conflicts.
+            if client == 'web':
+                if po_token:
+                    args['po_token'] = [f"web+{po_token}"]
+                if visitor_data:
+                    args['visitor_data'] = [visitor_data]
+                    
+            return {'youtube': args}
 
         info = None
         
