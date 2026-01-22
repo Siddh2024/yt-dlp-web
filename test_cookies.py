@@ -20,6 +20,7 @@ def test_download():
         'cookiefile': cookie_file,
         'verbose': True,
         'no_warnings': False,
+        'cache_dir': os.path.join(os.getcwd(), 'test_cache'),
         'outtmpl': 'test_download.%(ext)s',
         'extractor_args': {
             'youtube': {
