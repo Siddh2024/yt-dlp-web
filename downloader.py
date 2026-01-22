@@ -124,7 +124,7 @@ class Downloader:
             'no_warnings': True,
             'logger': QueueLogger(callback),
             'verbose': True, 
-            'cache_dir': '/tmp/yt-dlp-cache',
+            'cache_dir': os.path.join(tempfile.gettempdir(), 'yt-dlp-cache'),
             'extractor_args': {'youtube': {'player_client': ['tv']}},
             'force_ipv4': True,
             'overwrites': True,
