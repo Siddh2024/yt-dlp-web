@@ -123,61 +123,32 @@ class Downloader:
             'progress_hooks': [lambda d: self.progress_hook(d, callback)],
             'quiet': False, # Turn off quiet to generate logs
             'no_warnings': True,
-            'logger': QueueLogger(callback),
-            'verbose': True, 
-            'cache_dir': False, # Disable cache completely to prevent locking hangs
             'extractor_args': {'youtube': {'player_client': ['tv']}},
             'force_ipv4': True,
             'overwrites': True,
-            'updatetime': False, # no_mtime equivalent, prevents FS errors
+            'updatetime': False, 
         }
 
-        # FINAL ATTEMPT CONFIG:
-        # 'tv' client uses a different API that is often less throttled on servers.
-
-        if cookie_file:
-            ydl_opts['cookiefile'] = cookie_file
-
-        if format_type == 'audio_best':
-            ydl_opts.update({
-                'format': 'bestaudio/best',
-                'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '192'}],
-            })
-        elif format_type == 'audio_low':
-            ydl_opts.update({
-                'format': 'worstaudio/worst',
-                'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '128'}],
-            })
-        elif format_type == 'video_1080':
-            ydl_opts.update({'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]'})
-        elif format_type == 'video_720':
-            ydl_opts.update({'format': 'bestvideo[height<=720]+bestaudio/best[height<=720]'})
-        elif format_type == 'video_480':
-            ydl_opts.update({'format': 'bestvideo[height<=480]+bestaudio/best[height<=480]'})
-        elif format_type == 'video_only':
-             ydl_opts.update({'format': 'bestvideo'})
-        else:
-            # Default: Best Video + Best Audio
-            ydl_opts.update({'format': 'bestvideo+bestaudio/best'})
-
-        def attempt_download(opts, client_name):
-             if callback:
-                callback({'status': 'preparing', 'message': f'Starting extraction ({client_name})...'})
-             
-             with yt_dlp.YoutubeDL(opts) as ydl:
-                info = ydl.extract_info(url, download=True)
-                return info
-
-        po_token = os.environ.get('PO_TOKEN')
-        visitor_data = os.environ.get('VISITOR_DATA')
-        
-        def get_args(client):
-            args = {'player_client': [client]}
-            if po_token and client == 'web':
-                 args['po_token'] = [f"web+{po_token}"]
-            if visitor_data:
-                args['visitor_data'] = [visitor_data]
-            return {'youtube': args}
+        # 1. Try with Android Client (Usually most reliable)
+            # However, if PO Token is present, we often want to prioritize the Web client
+            # because the PO Token is generated from a Web session.
+            
+            po_token = os.environ.get('PO_TOKEN')
+            visitor_data = os.environ.get('VISITOR_DATA')
+            
+            # Helper to build args
+            def get_args(client):
+                args = {'player_client': [client]}
+                
+                # VISITOR_DATA and PO_TOKEN are web-based artifacts.
+                # Injecting them into mobile clients (Android/iOS) can cause hangs/conflicts.
+                if client == 'web':
+                    if po_token:
+                        args['po_token'] = [f"web+{po_token}"]
+                    if visitor_data:
+                        args['visitor_data'] = [visitor_data]
+                        
+                return {'youtube': args}
 
         info = None
         
