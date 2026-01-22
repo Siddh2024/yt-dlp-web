@@ -168,21 +168,32 @@ class Downloader:
                 return info
 
         try:
-            # 1. Try with TV client (set in initial opts)
-            info = attempt_download(ydl_opts, "TV Client")
-        except Exception as e:
-            print(f"TV Client failed: {e}")
-            if callback:
-                callback({'status': 'preparing', 'message': 'TV Client failed, retrying with Android...'})
-            
-            # 2. Fallback: Android Client
-            # Remove previous extractor args and set new ones
+            # 1. Try with Android Client (Usually most reliable)
             if 'extractor_args' in ydl_opts:
                 del ydl_opts['extractor_args']
             ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android']}}
-            
-            # Try again
             info = attempt_download(ydl_opts, "Android Client")
+            
+        except Exception as e_android:
+            print(f"Android Client failed: {e_android}")
+            if callback:
+                callback({'status': 'preparing', 'message': 'Android Client failed, trying iOS...'})
+                
+            try:
+                # 2. Fallback: iOS Client
+                ydl_opts['extractor_args'] = {'youtube': {'player_client': ['ios']}}
+                info = attempt_download(ydl_opts, "iOS Client")
+                
+            except Exception as e_ios:
+                print(f"iOS Client failed: {e_ios}")
+                if callback:
+                    callback({'status': 'preparing', 'message': 'iOS Client failed, trying Web (might work)...'})
+                
+                # 3. Fallback: Web Client (Default)
+                if 'extractor_args' in ydl_opts:
+                    del ydl_opts['extractor_args']
+                # No specific client args defaults to web/desktop
+                info = attempt_download(ydl_opts, "Web Client")
 
         # Process the result (info)
         if info:
